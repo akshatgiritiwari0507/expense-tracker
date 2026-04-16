@@ -1,0 +1,35 @@
+# Core Flask framework
+Flask==2.3.3
+
+# Database and ORM
+Flask-SQLAlchemy==3.0.5
+
+# Authentication and session management
+Flask-Login==0.6.3
+
+# Form handling and CSRF protection
+Flask-WTF==1.1.1
+WTForms==3.0.1
+email_validator==2.1.0
+
+# Password hashing
+Werkzeug==2.3.7
+
+# Environment variable management
+python-dotenv==1.0.0
+
+# Production WSGI server
+gunicorn==21.2.0
+
+# PostgreSQL adapter for production (uncomment for deployment)
+psycopg2-binary==2.9.6
+
+# Email support (optional, for future features)
+Flask-Mail==0.9.1
+
+# Date and time utilities
+python-dateutil==2.8.2
+
+# Development and testing
+pytest==7.4.2
+pytest-flask==1.2.0

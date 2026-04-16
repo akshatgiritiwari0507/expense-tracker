@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Basic Expense Tracker{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.dashboard') }}">
+                <i class="bi bi-wallet2"></i> Expense Tracker
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.all_expenses') }}">
+                            <i class="bi bi-list-ul"></i> All Expenses
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.all_income') }}">
+                            <i class="bi bi-wallet2"></i> All Income
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.add_expense') }}">
+                            <i class="bi bi-plus-circle"></i> Add Expense
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.name }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('main.change_password') }}">
+                                    <i class="bi bi-key"></i> Change Password
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('main.logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="position-fixed top-0 start-50 translate-middle-x p-3" style="z-index: 1050; max-width: 400px;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show shadow" role="alert">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>{{ message }}</span>
+                            <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+                        </div>
+                    </div>
+                    <script>
+                        setTimeout(function() {
+                            var alerts = document.querySelectorAll('.alert');
+                            alerts.forEach(function(alert) {
+                                var bsAlert = new bootstrap.Alert(alert);
+                                bsAlert.close();
+                            });
+                        }, 3000);
+                    </script>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="container my-4" style="padding-top: 80px;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Page Transition Notification -->
+    <div id="pageNotification" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1040; display: none;">
+        <div class="toast align-items-center text-white bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span id="notificationText">Page loaded</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <div class="container">
+            <p class="text-muted mb-0">&copy; 2024 Basic Expense Tracker. Built with Flask & Bootstrap.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript for Page Notifications -->
+    <script>
+        // Page transition notifications
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get page name from URL or title
+            const path = window.location.pathname;
+            let pageName = 'Dashboard';
+            
+            if (path.includes('/expenses')) {
+                pageName = 'All Expenses';
+            } else if (path.includes('/income')) {
+                pageName = 'All Income';
+            } else if (path.includes('/add-expense')) {
+                pageName = 'Add Expense';
+            } else if (path.includes('/change-password')) {
+                pageName = 'Change Password';
+            } else if (path.includes('/login')) {
+                pageName = 'Login';
+            } else if (path.includes('/signup')) {
+                pageName = 'Sign Up';
+            }
+            
+            // Show notification on hover
+            const notification = document.getElementById('pageNotification');
+            const notificationText = document.getElementById('notificationText');
+            
+            if (notification && notificationText) {
+                // Show notification on hover
+                let hoverTimeout;
+                
+                document.addEventListener('mousemove', function() {
+                    clearTimeout(hoverTimeout);
+                    notification.style.display = 'block';
+                    notificationText.textContent = pageName + ' loaded';
+                    
+                    // Hide after 2 seconds
+                    hoverTimeout = setTimeout(function() {
+                        notification.style.display = 'none';
+                    }, 2000);
+                });
+                
+                // Hide on mouse stop
+                clearTimeout(hoverTimeout);
+                const mouseStopTimer = setTimeout(function() {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+            <div>
+                <a href="{{ url_for('main.add_expense') }}" class="btn btn-danger me-2">
+                    <i class="bi bi-plus-circle"></i> Add Expense
+                </a>
+                <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal">
+                    <i class="bi bi-plus-circle"></i> Add Income
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Income</h6>
+                        <h3>Rs{{ "%.2f"|format(total_income) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-arrow-up-circle" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Spent</h6>
+                        <h3>Rs{{ "%.2f"|format(total_spent) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-arrow-down-circle" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Balance</h6>
+                        <h3>Rs{{ "%.2f"|format(balance) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-wallet2" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Today's Net</h6>
+                        <h3>Rs{{ "%.2f"|format(today_income - today_spent) }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-calendar-day" style="font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Income -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-wallet2"></i> Recent Income</h5>
+                <small class="text-muted">Last 5 entries</small>
+            </div>
+            <div class="card-body">
+                {% if recent_income %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Source</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for income in recent_income %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-success">{{ income.source }}</span>
+                                        </td>
+                                        <td class="text-end fw-bold">Rs{{ "%.2f"|format(income.amount) }}</td>
+                                        <td>{{ income.date|dateformat }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-2">
+                        <a href="{{ url_for('main.all_income') }}" class="btn btn-sm btn-outline-success">View All Income</a>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No income recorded yet.</p>
+                    <div class="text-center mt-2">
+                        <a href="#" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal">Add Your First Income</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Expenses -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Expenses</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_expenses %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in recent_expenses %}
+                                <tr>
+                                    <td>{{ expense.date.strftime('%d/%m') }}</td>
+                                    <td>
+                                        <div>
+                                            <strong>{{ expense.category }}</strong>
+                                            {% if expense.description %}
+                                                <br><small class="text-muted">{{ expense.description[:30] }}{% if expense.description|length > 30 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-bold">Rs{{ "%.2f"|format(expense.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('main.all_expenses') }}" class="btn btn-outline-success btn-sm">View All Expenses</a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No expenses recorded yet.</p>
+                    <div class="text-center">
+                        <a href="{{ url_for('main.add_expense') }}" class="btn btn-success">Add Your First Expense</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Income Modal -->
+<div class="modal fade" id="addIncomeModal" tabindex="-1" aria-labelledby="addIncomeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addIncomeModalLabel">
+                    <i class="bi bi-plus-circle"></i> Add Income
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.add_income') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">Rs</span>
+                            <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="source" class="form-label">Source</label>
+                        <select class="form-select" id="source" name="source" required>
+                            <option value="">Select Source</option>
+                            <option value="Salary">Salary</option>
+                            <option value="Business">Business</option>
+                            <option value="Investment">Investment</option>
+                            <option value="Freelance">Freelance</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Save Income
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Set today's date for income form -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('date');
+        if (dateInput) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+    });
+</script>
+
+{% endblock %}

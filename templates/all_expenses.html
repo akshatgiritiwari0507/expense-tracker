@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}All Expenses - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-list-ul"></i> All Expenses</h1>
+            <a href="{{ url_for('main.add_expense') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Add Expense
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filter and Search Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="{{ url_for('main.all_expenses') }}">
+                    <div class="row align-items-end">
+                        <div class="col-md-2 mb-3 mb-md-0">
+                            {{ form.from_date.label(class="form-label") }}
+                            {{ form.from_date(class="form-control" + (" is-invalid" if form.from_date.errors else ""), value=from_date) }}
+                        </div>
+                        <div class="col-md-2 mb-3 mb-md-0">
+                            {{ form.to_date.label(class="form-label") }}
+                            {{ form.to_date(class="form-control" + (" is-invalid" if form.to_date.errors else ""), value=to_date) }}
+                        </div>
+                        <div class="col-md-3 mb-3 mb-md-0">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Search expenses...">
+                        </div>
+                        <div class="col-md-2 mb-3 mb-md-0">
+                            <label for="search_type" class="form-label">Search In</label>
+                            <select class="form-select" id="search_type" name="search_type">
+                                <option value="both" {% if search_type == 'both' %}selected{% endif %}>Both</option>
+                                <option value="category" {% if search_type == 'category' %}selected{% endif %}>Category</option>
+                                <option value="description" {% if search_type == 'description' %}selected{% endif %}>Description</option>
+                            </select>
+                        </div>
+                        <div class="col-md-auto">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Expenses by Date -->
+{% if expenses_by_date %}
+    {% set grand_total = namespace(value=0) %}
+    {% for expense_date, expenses in expenses_by_date.items() %}
+        {% set day_total = namespace(value=0) %}
+        {% set is_today = expense_date == today_date %}
+        
+        <div class="card mb-4 border-start border-4 {% if is_today %}border-primary border-5 shadow-lg{% else %}border-success{% endif %}">
+            <div class="card-header {% if is_today %}bg-primary text-white border-bottom border-primary{% else %}bg-light border-bottom border-success{% endif %}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar3"></i> 
+                        {{ expense_date|dateformat }}
+                        {% if is_today %}
+                            <span class="badge bg-warning text-dark ms-2">TODAY</span>
+                        {% endif %}
+                    </h5>
+                    <span class="badge {% if is_today %}bg-warning text-dark{% else %}bg-success{% endif %}">Day Total: Rs{{ "%.2f"|format(expenses|sum(attribute='amount')) }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                                {% set day_total.value = day_total.value + expense.amount %}
+                                {% set grand_total.value = grand_total.value + expense.amount %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ expense.category }}</span>
+                                    </td>
+                                    <td>
+                                        {% if expense.description %}
+                                            {{ expense.description }}
+                                        {% else %}
+                                            <em class="text-muted">No description</em>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-bold">Rs{{ "%.2f"|format(expense.amount) }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('main.edit_expense', expense_id=expense.id) }}" 
+                                           class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('main.delete_expense', expense_id=expense.id) }}" 
+                                              class="d-inline" onsubmit="return confirm('Are you sure you want to delete this expense?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    
+    <!-- Grand Total -->
+    <div class="card">
+        <div class="card-body bg-success text-white">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4><i class="bi bi-calculator"></i> Grand Total</h4>
+                </div>
+                <div class="col-md-6 text-end">
+                    <h4>Rs{{ "%.2f"|format(grand_total.value) }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">No expenses found</h4>
+            <p class="text-muted">No expenses recorded for the selected date range.</p>
+            <a href="{{ url_for('main.add_expense') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Add Your First Expense
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
