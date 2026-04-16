@@ -2,9 +2,13 @@
 
 This guide provides step-by-step instructions for deploying the Basic Expense Tracker to production using Render.
 
-## 🚀 Deploying to Render
+## Live Demo
 
-Render is a cloud platform that makes it easy to deploy web applications. Follow these steps to deploy your expense tracker.
+**See the deployed app:** https://expense-tracker-dycf.onrender.com/dashboard
+
+## Deploying to Render
+
+Render is a cloud platform that makes it easy to deploy web applications. Follow these steps to deploy your expense tracker with all features including income tracking, search functionality, and password management.
 
 ### Prerequisites
 
@@ -42,6 +46,7 @@ Set the following build settings:
 ```bash
 Build Command: pip install -r requirements.txt
 Start Command: gunicorn run:app
+Runtime: Python 3
 ```
 
 ### Step 3: Environment Variables
@@ -53,25 +58,13 @@ Add the following environment variables in Render dashboard:
    - Example: `python -c "import secrets; print(secrets.token_hex(32))"`
    - Add to environment variables
 
-2. **DATABASE_URL** (if using PostgreSQL)
+2. **FLASK_ENV**
+   - Value: `production`
+
+3. **DATABASE_URL** (if using PostgreSQL)
    - Add a PostgreSQL database to your Render service
    - Render will automatically provide the DATABASE_URL
    - Copy the connection string to environment variables
-
-3. **FLASK_ENV**
-   - Value: `production`
-
-### Step 4: Database Setup (Optional but Recommended)
-
-1. **Add PostgreSQL Database**
-   - In your Render dashboard, click "New +"
-   - Select "PostgreSQL"
-   - Choose the same region as your web service
-   - Select your expense-tracker service to link it
-
-2. **Database Configuration**
-   - Render will automatically set `DATABASE_URL`
-   - The app will automatically use PostgreSQL when this variable is set
 
 ### Step 5: Deploy
 
@@ -90,7 +83,16 @@ Add the following environment variables in Render dashboard:
    - Try signing up for a new account
    - Add an expense to verify database connectivity
 
-2. **Check Logs**
+2. **Test All Features**
+   - **User Authentication:** Signup, login, logout, password change
+   - **Expense Management:** Add, edit, delete, view expenses
+   - **Income Tracking:** Add, edit, delete, view income
+   - **Search Functionality:** Search by category/source and description
+   - **Dashboard:** View financial summary and recent activity
+   - **Date Filtering:** Filter expenses/income by date range
+   - **Visual Features:** Today's entries highlighted, proper date sorting
+
+3. **Check Logs**
    - If issues occur, check Render logs
    - Common issues: missing environment variables, database connection errors
 
