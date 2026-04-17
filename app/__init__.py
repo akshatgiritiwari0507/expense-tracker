@@ -11,6 +11,7 @@ load_dotenv()
 # Initialize extensions
 db = SQLAlchemy()
 login_manager = LoginManager()
+
 csrf = CSRFProtect()
 
 def create_app(config_name='development'):
@@ -30,7 +31,7 @@ def create_app(config_name='development'):
     csrf.init_app(app)
     
     # Configure login manager
-    login_manager.login_view = 'login'
+    login_manager.login_view = 'main.login'
     login_manager.login_message = 'Please log in to access this page.'
     login_manager.login_message_category = 'info'
     
