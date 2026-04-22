@@ -1,1 +1,1 @@
-web: gunicorn run:app
+web: python migrate_categories.py && gunicorn run:app
