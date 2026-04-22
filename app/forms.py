@@ -81,3 +81,49 @@ class ChangePasswordForm(FlaskForm):
         EqualTo('new_password', message='Passwords must match')
     ])
     submit = SubmitField('Change Password')
+
+class CategoryForm(FlaskForm):
+    """Form for adding and editing expense categories"""
+    name = StringField('Category Name', validators=[
+        DataRequired(), 
+        Length(min=2, max=50, message='Category name must be between 2 and 50 characters')
+    ])
+    icon = SelectField('Icon', 
+                       choices=[
+                           ('fa-utensils', 'Food'),
+                           ('fa-plane', 'Travel'),
+                           ('fa-shopping-cart', 'Shopping'),
+                           ('fa-file-invoice-dollar', 'Bills'),
+                           ('fa-film', 'Entertainment'),
+                           ('fa-home', 'Home'),
+                           ('fa-car', 'Transportation'),
+                           ('fa-heartbeat', 'Healthcare'),
+                           ('fa-graduation-cap', 'Education'),
+                           ('fa-gift', 'Gifts'),
+                           ('fa-ellipsis-h', 'Others')
+                       ],
+                       validators=[DataRequired()])
+    color = StringField('Color', validators=[
+        DataRequired(),
+        Length(min=7, max=7, message='Color must be a valid hex code')
+    ])
+    submit = SubmitField('Save Category')
+
+class ReportForm(FlaskForm):
+    """Form for generating financial reports"""
+    report_type = SelectField('Report Type', 
+                             choices=[
+                                 ('monthly', 'Monthly Report'),
+                                 ('yearly', 'Yearly Report'),
+                                 ('custom', 'Custom Date Range')
+                             ],
+                             validators=[DataRequired()])
+    from_date = DateField('From Date', validators=[Optional()], format='%Y-%m-%d')
+    to_date = DateField('To Date', validators=[Optional()], format='%Y-%m-%d')
+    export_format = SelectField('Export Format', 
+                               choices=[
+                                   ('pdf', 'PDF'),
+                                   ('excel', 'Excel')
+                               ],
+                               validators=[DataRequired()])
+    submit = SubmitField('Generate Report')

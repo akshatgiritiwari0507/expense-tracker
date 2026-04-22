@@ -3,8 +3,9 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func, desc
 from app import db
-from app.models import User, Expense, Income
-from app.forms import LoginForm, SignupForm, ExpenseForm, ExpenseFilterForm, IncomeForm, ChangePasswordForm
+from app.models import User, Expense, Income, Category
+from app.forms import LoginForm, SignupForm, ExpenseForm, ExpenseFilterForm, IncomeForm, ChangePasswordForm, CategoryForm, ReportForm
+from app.reports import ReportGenerator
 
 # Create blueprint
 main = Blueprint('main', __name__)
@@ -339,7 +340,10 @@ def add_expense():
     if not form.date.data:
         form.date.data = date.today()
     
-    return render_template('add_edit_expense.html', form=form, title='Add Expense')
+    # Get user categories
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    
+    return render_template('add_edit_expense.html', form=form, title='Add Expense', categories=categories)
 
 @main.route('/expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
 @login_required
@@ -358,7 +362,10 @@ def edit_expense(expense_id):
         flash('Expense updated successfully!', 'success')
         return redirect(url_for('main.all_expenses'))
     
-    return render_template('add_edit_expense.html', form=form, title='Edit Expense')
+    # Get user categories
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    
+    return render_template('add_edit_expense.html', form=form, title='Edit Expense', categories=categories)
 
 @main.route('/expenses/delete/<int:expense_id>', methods=['POST'])
 @login_required
@@ -369,6 +376,139 @@ def delete_expense(expense_id):
     db.session.commit()
     flash('Expense deleted successfully!', 'success')
     return redirect(url_for('main.all_expenses'))
+
+# Category management routes
+@main.route('/categories')
+@login_required
+def categories():
+    """Display and manage expense categories"""
+    categories = Category.query.filter_by(user_id=current_user.id).all()
+    return render_template('categories.html', categories=categories)
+
+@main.route('/categories/add', methods=['GET', 'POST'])
+@login_required
+def add_category():
+    """Add a new expense category"""
+    form = CategoryForm()
+    if form.validate_on_submit():
+        category = Category(
+            name=form.name.data,
+            icon=form.icon.data,
+            color=form.color.data,
+            user_id=current_user.id
+        )
+        db.session.add(category)
+        db.session.commit()
+        flash('Category added successfully!', 'success')
+        return redirect(url_for('main.categories'))
+    return render_template('add_category.html', form=form)
+
+@main.route('/categories/edit/<int:category_id>', methods=['GET', 'POST'])
+@login_required
+def edit_category(category_id):
+    """Edit an existing expense category"""
+    category = Category.query.filter_by(id=category_id, user_id=current_user.id).first_or_404()
+    form = CategoryForm(obj=category)
+    if form.validate_on_submit():
+        category.name = form.name.data
+        category.icon = form.icon.data
+        category.color = form.color.data
+        db.session.commit()
+        flash('Category updated successfully!', 'success')
+        return redirect(url_for('main.categories'))
+    return render_template('edit_category.html', form=form, category=category)
+
+@main.route('/categories/delete/<int:category_id>', methods=['POST'])
+@login_required
+def delete_category(category_id):
+    """Delete an expense category"""
+    category = Category.query.filter_by(id=category_id, user_id=current_user.id).first_or_404()
+    db.session.delete(category)
+    db.session.commit()
+    flash('Category deleted successfully!', 'success')
+    return redirect(url_for('main.categories'))
+
+# Report generation routes
+@main.route('/reports')
+@login_required
+def reports():
+    """Display financial reports and analytics"""
+    form = ReportForm()
+    return render_template('reports.html', form=form)
+
+@main.route('/reports/generate', methods=['POST'])
+@login_required
+def generate_report():
+    """Generate financial report"""
+    form = ReportForm()
+    if form.validate_on_submit():
+        report_generator = ReportGenerator(current_user.id)
+        
+        # Determine date range
+        start_date = form.from_date.data
+        end_date = form.to_date.data
+        
+        if form.report_type.data == 'monthly':
+            start_date = date(date.today().year, date.today().month, 1)
+            end_date = date(date.today().year, date.today().month, 28)  # Simplified
+        elif form.report_type.data == 'yearly':
+            start_date = date(date.today().year, 1, 1)
+            end_date = date(date.today().year, 12, 31)
+        
+        # Generate report
+        if form.export_format.data == 'pdf':
+            report_data = report_generator.generate_pdf_report(start_date, end_date, form.report_type.data)
+            filename = f"financial_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        else:  # Excel
+            report_data = report_generator.generate_excel_report(start_date, end_date)
+            filename = f"financial_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        # Return file for download
+        from flask import send_file
+        import io
+        return send_file(
+            io.BytesIO(report_data),
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf' if form.export_format.data == 'pdf' else 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    
+    flash('Please fill out the report form correctly.', 'danger')
+    return redirect(url_for('main.reports'))
+
+@main.route('/api/charts/spending')
+@login_required
+def spending_chart():
+    """API endpoint for spending chart data"""
+    chart_type = request.args.get('type', 'pie')
+    report_generator = ReportGenerator(current_user.id)
+    chart_data = report_generator.generate_spending_chart(chart_type)
+    return jsonify({'chart_data': chart_data})
+
+@main.route('/api/charts/trends')
+@login_required
+def trends_chart():
+    """API endpoint for trends chart data"""
+    report_generator = ReportGenerator(current_user.id)
+    chart_data = report_generator.generate_trend_chart()
+    return jsonify({'chart_data': chart_data})
+
+@main.route('/api/dashboard-stats')
+@login_required
+def dashboard_stats():
+    """API endpoint for dashboard statistics"""
+    total_expenses = db.session.query(func.sum(Expense.amount)).filter_by(user_id=current_user.id).scalar() or 0
+    total_income = db.session.query(func.sum(Income.amount)).filter_by(user_id=current_user.id).scalar() or 0
+    balance = total_income - total_expenses
+    total_transactions = db.session.query(Expense).filter_by(user_id=current_user.id).count() + \
+                        db.session.query(Income).filter_by(user_id=current_user.id).count()
+    
+    return jsonify({
+        'total_expenses': total_expenses,
+        'total_income': total_income,
+        'balance': balance,
+        'total_transactions': total_transactions
+    })
 
 # Error handlers
 @main.errorhandler(404)

@@ -14,8 +14,9 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationship with expenses
+    # Relationships
     expenses = db.relationship('Expense', backref='user', lazy=True, cascade='all, delete-orphan')
+    categories = db.relationship('Category', backref='user', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
         """Hash and set password"""
@@ -27,6 +28,40 @@ class User(UserMixin, db.Model):
     
     def __repr__(self):
         return f'<User {self.email}>'
+
+class Category(db.Model):
+    """Category model for custom expense categories"""
+    __tablename__ = 'categories'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    icon = db.Column(db.String(50))  # Font Awesome icons
+    color = db.Column(db.String(7))  # Hex color codes
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Default categories for all users
+    DEFAULT_CATEGORIES = [
+        {'name': 'Food', 'icon': 'fa-utensils', 'color': '#FF6B6B'},
+        {'name': 'Travel', 'icon': 'fa-plane', 'color': '#4ECDC4'},
+        {'name': 'Shopping', 'icon': 'fa-shopping-cart', 'color': '#45B7D1'},
+        {'name': 'Bills', 'icon': 'fa-file-invoice-dollar', 'color': '#96CEB4'},
+        {'name': 'Entertainment', 'icon': 'fa-film', 'color': '#FFEAA7'},
+        {'name': 'Others', 'icon': 'fa-ellipsis-h', 'color': '#DDA0DD'}
+    ]
+    
+    def to_dict(self):
+        """Convert category to dictionary for JSON serialization"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'icon': self.icon,
+            'color': self.color,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+    
+    def __repr__(self):
+        return f'<Category {self.name}>'
 
 class Expense(db.Model):
     """Expense model for tracking user expenses"""

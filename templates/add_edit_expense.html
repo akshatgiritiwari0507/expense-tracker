@@ -44,7 +44,13 @@
                     
                     <div class="mb-3">
                         {{ form.category.label(class="form-label") }}
-                        {{ form.category(class="form-select" + (" is-invalid" if form.category.errors else "")) }}
+                        <select class="form-select" name="category" id="category">
+                            {% for category in categories %}
+                                <option value="{{ category.name }}" {% if form.category.data == category.name %}selected{% endif %}>
+                                    <i class="{{ category.icon }}"></i> {{ category.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
                         {% if form.category.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.category.errors %}

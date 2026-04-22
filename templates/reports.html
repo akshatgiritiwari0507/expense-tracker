@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Basic Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Financial Reports & Analytics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Report Generation Form -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Generate Report</h6>
+                                    <form method="POST" action="{{ url_for('main.generate_report') }}">
+                                        {{ form.hidden_tag() }}
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                {{ form.report_type.label(class="form-label") }}
+                                                {{ form.report_type(class="form-select") }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                {{ form.from_date.label(class="form-label") }}
+                                                {{ form.from_date(class="form-control") }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                {{ form.to_date.label(class="form-label") }}
+                                                {{ form.to_date(class="form-control") }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                {{ form.export_format.label(class="form-label") }}
+                                                {{ form.export_format(class="form-select") }}
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-12">
+                                                {{ form.submit(class="btn btn-primary") }}
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Spending Distribution</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="spendingChart"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Spending Trends</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="trendsChart"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Type Toggle -->
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Chart Options</h6>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-primary" onclick="changeChartType('pie')">
+                                            <i class="fas fa-chart-pie me-1"></i>
+                                            Pie Chart
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="changeChartType('bar')">
+                                            <i class="fas fa-chart-bar me-1"></i>
+                                            Bar Chart
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="refreshCharts()">
+                                            <i class="fas fa-sync me-1"></i>
+                                            Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Total Expenses</h5>
+                                    <h3 id="totalExpenses">$0.00</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Total Income</h5>
+                                    <h3 id="totalIncome">$0.00</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Balance</h5>
+                                    <h3 id="balance">$0.00</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Transactions</h5>
+                                    <h3 id="totalTransactions">0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Plotly.js -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script>
+// Load charts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCharts();
+    loadQuickStats();
+});
+
+function loadCharts() {
+    // Load spending chart
+    fetch('/api/charts/spending')
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart_data) {
+                const chartData = JSON.parse(data.chart_data);
+                Plotly.newPlot('spendingChart', chartData.data, chartData.layout);
+            }
+        });
+
+    // Load trends chart
+    fetch('/api/charts/trends')
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart_data) {
+                const chartData = JSON.parse(data.chart_data);
+                Plotly.newPlot('trendsChart', chartData.data, chartData.layout);
+            }
+        });
+}
+
+function changeChartType(type) {
+    fetch('/api/charts/spending?type=' + type)
+        .then(response => response.json())
+        .then(data => {
+            if (data.chart_data) {
+                const chartData = JSON.parse(data.chart_data);
+                Plotly.newPlot('spendingChart', chartData.data, chartData.layout);
+            }
+        });
+}
+
+function refreshCharts() {
+    loadCharts();
+    loadQuickStats();
+}
+
+function loadQuickStats() {
+    fetch('/api/dashboard-stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalExpenses').textContent = '$' + data.total_expenses.toFixed(2);
+            document.getElementById('totalIncome').textContent = '$' + data.total_income.toFixed(2);
+            document.getElementById('balance').textContent = '$' + data.balance.toFixed(2);
+            document.getElementById('totalTransactions').textContent = data.total_transactions;
+        });
+}
+</script>
+{% endblock %}
